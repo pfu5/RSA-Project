@@ -67,7 +67,7 @@ void loop() {
     // Lower the fan to begin making a u-turn
  
     // Continue turning servo by 10 degrees if the boat hasn't rotated 180 degrees
-    if (abs(AngleInDegrees - initialAngleInDegrees) < 180.){
+    while (abs(AngleInDegrees - initialAngleInDegrees) < 180){
       myServo.write(10)
       mag.read();
       scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
