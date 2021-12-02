@@ -168,12 +168,12 @@ void loop() {
           yDist = yAcc * (millis()-timer);
           currentDistance = (xDist^2+yDist^2)^0.5;
         }
-        mag.read();
-        scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
-        scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
-        theta = atan2(scaledX,scaledY);
-        while (theta ) {
-        }
+        //mag.read();
+        //scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
+        //scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
+        //theta = atan2(scaledX,scaledY);
+        //while (theta ) {
+        //}
       }
       
       autoMode = false;
