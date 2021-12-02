@@ -13,8 +13,8 @@ float scaledX;
 float scaledY;
 float scaledZ;
 float theta;
-float initialAngleInDegrees
-float currentAngleInDegrees
+float initialAngleInDegrees;
+float currentAngleInDegrees;
 
 int32_e maxX EEMEM;
 int32_e maxY EEMEM;
@@ -23,6 +23,8 @@ int32_e minX EEMEM;
 int32_e minY EEMEM;
 int32_e minZ EEMEM;
 int32_e initialDir EEMEM;
+
+unsigned long begin_time;
 
 void setup() {
    Wire.begin();
@@ -48,8 +50,6 @@ void setup() {
      minY = min(mag.m.y, minY);
      minZ = min(mag.m.z, minZ);
     }
-    
-   delay(500);
 
     mag.read();
     scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
@@ -58,12 +58,19 @@ void setup() {
 
     initialAngleInDegrees = theta/2/3.14*360;
     currentAngleInDegrees = theta/2/3.14*360;
+    
+    begin_time = millis();
       
 }
 
 void loop() {
   
     // Turn the fan for the boat on for certain amount of time
+    accel.write(144);
+    if(millis() - begin_time > 10000){
+      accel.write(50);
+      begin_time = millis();
+    }
     // Lower the fan to begin making a u-turn
  
     // Continue turning servo by 10 degrees if the boat hasn't rotated 180 degrees
@@ -74,10 +81,9 @@ void loop() {
       scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
       theta = atan2(scaledX,scaledY);
       currentAngleInDegrees = theta/2/3.14*360;
-      
     }
- 
-    delay(500);
+    
+   accel.write(144);
   
 }
 
