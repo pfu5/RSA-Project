@@ -1,0 +1,101 @@
+//including libraries
+#include <TinyGPS.h>
+#include <SoftwareSerial.h>
+
+//initialize constants
+int serialpinRX = 4; //connects to board TX
+int serialpinTX = 3; //connects to beard RX
+boolean newData = false; //controls data recording
+//initializes instance
+TinyGPS myGPS;
+SoftwareSerial ss(serialpinRX, serialpinTX);
+//initializes lattitude and longtitude
+float initialFlat = 0;
+float initialFlon = 0;
+float initialAge = 0;
+//initializes variables for distance and angle
+float distanceMeterLat;
+float distanceMeterLon;
+float radialDistance;
+float currentAngle;
+float flat, flon;
+unsigned long age;
+float circleRadius = 50;
+boolean initialized = false;
+
+
+void setup() {
+  ss.begin(9600);
+  Serial.begin(9600);
+  delay(1000);
+  while (1 > 0) {
+    if (ss.available()) {
+      char c = ss.read();
+      if (myGPS.encode(c) == true) {
+        break;//exits loop and proceeds
+      }   //only when signal is received and encodable
+    }
+  }
+  Serial.println("GPS good");
+  unsigned long age;
+  //reads and sets initial location
+  myGPS.f_get_position(&flat, &flon, &age);
+  initialFlat = flat;
+  initialFlon = flon;
+  initialAge = age;
+}
+
+void loop() {
+
+//start doing all these only when set to auto mode
+//i.e. if(buttone pressed)
+//initialized = false;
+
+  newData = false;
+  while (ss.available()) {
+    char c = ss.read();
+    if (myGPS.encode(c)) {
+      newData = true;
+    }
+  }
+  //exits loop and proceeds
+  //only when signal is received and encodable
+  
+if (initialized == false){
+  myGPS.f_get_position(&flat, &flon, &age);
+  initialFlat = flat;
+  initialFlon = flon;
+  initialAge = age;
+  initialized = true;
+}
+
+  if (newData) {
+    myGPS.f_get_position(&flat, &flon, &age);
+    //records latitudinal and longtitudinal distance
+    distanceMeterLat = TinyGPS::distance_between(flat, 0, initialFlat, 0);
+    distanceMeterLon = TinyGPS::distance_between(0, flon, 0, initialFlon);
+    if (flat < initialFlat) {
+      distanceMeterLat = -1. * distanceMeterLat;//corrects for sign
+    }
+    if (flon < initialFlon) {
+      distanceMeterLon = -1. * distanceMeterLon;//corrects for sign
+    }
+  }
+  //calculates distance from original postion
+  radialDistance = sqrt(distanceMeterLat * distanceMeterLat + distanceMeterLon * distanceMeterLon);
+  //calculates angle from original position
+  currentAngle = atan2(distanceMeterLat, distanceMeterLon);
+  //prints distance and angle
+  Serial.println(radialDistance);
+  Serial.print(" ");
+  //Serial.println(currentAngle);
+
+  if (radialDistance < circleRadius){
+    //accelServo.write(180);
+    //direcServo.write(90);
+    Serial.println("still in circle");
+  }
+//  else {
+//    accelServo.write(90);
+//    direcServo.write(45);
+//  }
