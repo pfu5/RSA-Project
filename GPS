@@ -1,6 +1,7 @@
 //including libraries
 #include <TinyGPS.h>
 #include <SoftwareSerial.h>
+#include <Servo.h>
 
 //initialize constants
 int serialpinRX = 4; //connects to board TX
@@ -23,11 +24,19 @@ unsigned long age;
 float circleRadius = 50;
 boolean initialized = false;
 
+#define ACCEL_PIN 10
+#define DIREC_PIN 9
+Servo accelServo;
+Servo direcServo;
+
 
 void setup() {
   ss.begin(9600);
   Serial.begin(9600);
   delay(1000);
+  accelServo.attach(ACCEL_PIN);
+  direcServo.attach(DIREC_PIN);
+  direcServo.write(90);
   while (1 > 0) {
     if (ss.available()) {
       char c = ss.read();
@@ -91,11 +100,12 @@ if (initialized == false){
   //Serial.println(currentAngle);
 
   if (radialDistance < circleRadius){
-    //accelServo.write(180);
-    //direcServo.write(90);
-    Serial.println("still in circle");
+    accelServo.write(180);
+    direcServo.write(90);
   }
-//  else {
-//    accelServo.write(90);
-//    direcServo.write(45);
-//  }
+  else {
+    accelServo.write(90);
+    direcServo.write(45);
+    Serial.println("out of circle");
+  }
+}
