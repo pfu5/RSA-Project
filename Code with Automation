@@ -158,9 +158,12 @@ void loop() {
       scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
       theta = atan2(scaledX,scaledY);
       initialAngleInDegrees = theta/2/3.14*360;
-      while (autoMode==true){
-        while (currentDistance<distance) {
-          accel.write(50);
+      
+      
+      
+      if (autoMode==true){
+        if (currentDistance<distance) {
+          accel.write(180);
           direc.write(90);
           timer = millis();
           myAccel.read();
