@@ -46,11 +46,19 @@ float currentAngleInDegrees
 int magPin = 6;
 
 //variables for autonomouse mode
+float xAcc;
+float yAcc;
+float xDist=0;
+float yDist=0;
+unsigned long timer;
 float distance = 1000;
 float currentDistance = 0;
 volatile boolean autoMode = false;
 
 void setup() {
+
+  Wire.begin();//don't know why do this but why not
+
   Serial.begin(9600); // set the serial monitor communication rate
   accel.attach(ACCEL_PIN);
   direc.attach(DIREC_PIN);
@@ -145,10 +153,29 @@ void loop() {
         return;
       }
       // TODO put autonomous code right here
+            mag.read();
+      scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
+      scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
+      theta = atan2(scaledX,scaledY);
+      initialAngleInDegrees = theta/2/3.14*360;
       while (autoMode==true){
-        accel.write(0);
-        direc.write(90);
+        while (currentDistance<distance) {
+          accel.write(50);
+          direc.write(90);
+          timer = millis();
+          myAccel.read();
+          xDist = xAcc * (millis()-timer);
+          yDist = yAcc * (millis()-timer);
+          currentDistance = (xDist^2+yDist^2)^0.5;
+        }
+        mag.read();
+        scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
+        scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
+        theta = atan2(scaledX,scaledY);
+        while (theta ) {
+        }
       }
+      
       autoMode = false;
       currentDistance = 0;
     }
