@@ -169,7 +169,7 @@ void loop() {
           myAccel.read();
           xDist = xAcc * (millis()-timer);
           yDist = yAcc * (millis()-timer);
-          currentDistance = (xDist^2+yDist^2)^0.5;
+          currentDistance = (xDist^2+yDist^2)^0.5 + currentDistance;
         }
         //mag.read();
         //scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
