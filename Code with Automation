@@ -1,0 +1,163 @@
+// include the libraries being used
+#include <Servo.h>
+#include <SPI.h>
+#include <RH_RF69.h>
+
+//libraries for magnetometer & accelerometer
+#include <math.h>
+#include <LIS3MDL.h> //magnetometer
+#include <Wire.h>
+#include <EEPROM.h>
+#include <EEWrap.h>
+#include <LSM6.h> //accelerometer
+
+LIS3MDL mag;
+LSM6 myAccel;
+
+// define the communication pin numbers
+#define INT_PIN 2
+#define RST_PIN 9
+#define CS_PIN 10
+
+// define the servomotors' pins
+#define ACCEL_PIN 7
+#define DIREC_PIN 8
+
+// declare all variables
+Servo accel;
+Servo direc;
+
+RH_RF69 transceiver(CS_PIN, INT_PIN); // initialize the transceiver object
+
+//variables for magnetometer calibration
+int32_e maxX EEMEM;
+int32_e maxY EEMEM;
+int32_e maxZ EEMEM;
+int32_e minX EEMEM;
+int32_e minY EEMEM;
+int32_e minZ EEMEM;
+int32_e initialDir EEMEM;
+float scaledX;
+float scaledY;
+float scaledZ;
+float theta;
+float initialAngleInDegrees
+float currentAngleInDegrees
+int magPin = 6;
+
+//variables for autonomouse mode
+float distance = 1000;
+float currentDistance = 0;
+volatile boolean autoMode = false;
+
+void setup() {
+  Serial.begin(9600); // set the serial monitor communication rate
+  accel.attach(ACCEL_PIN);
+  direc.attach(DIREC_PIN);
+  pinMode(RST_PIN, OUTPUT); // set the RST pin as output
+  digitalWrite(RST_PIN, HIGH); // set the RST pin to high
+  delay(10); // wait for 10ms
+  digitalWrite(RST_PIN, LOW); // set the RST pin to low
+  delay(10); // wait for 10ms
+  if (!transceiver.init()) { // make sure the init is successful
+    Serial.println("init failed");
+  }
+  if (!transceiver.setFrequency(915.0)) { // make sure the setFrequency is successful
+    Serial.println("setFrequency failed");
+  }
+  transceiver.setTxPower(14, true); // set transceiver's power level
+  
+  pinMode(INT_PIN,INPUT_PULLUP);
+  attachInterrupt(0, AUTO, FALLING);
+  
+  //doing magnetometer calibration here
+  pinMode (magPin, INPUT_PULLUP);
+  maxX = -32000;
+  maxY = -32000;
+  maxZ = -32000;
+  minX = 32000;
+  minY = 32000;
+  minZ = 32000;
+  while (true) {
+      mag.read();
+      //updates new maximum calibration data
+      while (mag.m.x > maxX){
+        maxX = mag.m.x;
+      }
+      while (mag.m.y > maxY){
+        maxY = mag.m.y;
+      }
+      while (mag.m.z > maxZ){
+        maxZ = mag.m.z;
+      }
+      while (mag.m.x < minX){
+        minX = mag.m.x;
+      }
+      while (mag.m.y < minY){
+        minY = mag.m.y;
+      }
+      while (mag.m.z < minZ){
+        minZ = mag.m.z;
+      }
+      delay (200);//update every 200ms
+      //display current calibration value for the user
+      Serial.print(maxX);
+      Serial.print(" ");
+      Serial.print(maxY);
+      Serial.print(" ");
+      Serial.print(maxZ);
+      Serial.print(" ");
+      Serial.print(minX);
+      Serial.print(" ");
+      Serial.print(minY);
+      Serial.print(" ");
+      Serial.println(minZ);
+      if(digitalRead(magPin)==LOW){
+        break;
+      }
+
+  ｝
+  delay(500);
+  
+  //records initial angle
+  mag.read();
+  scaledX = 2*(float(mag.m.x-minX))/float((maxX-minX))-1;
+  scaledY = 2*(float(mag.m.y-minY))/float((maxY-minY))-1;
+  theta = atan2(scaledX,scaledY);
+
+  initialAngleInDegrees = theta/2/3.14*360;
+  currentAngleInDegrees = theta/2/3.14*360;
+  
+}
+
+void loop() {
+  if(transceiver.available()) {
+    uint8_t packet[RH_RF69_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(packet);
+    if(transceiver.recv(packet, &len)) {
+      if(((bool)packet[2]) == false) {
+        accel.write(0);
+        direc.write(90);
+        return;
+      }
+      if(((bool)packet[3]) == true) {
+        
+        return;
+      }
+      // TODO put autonomous code right here
+      while (autoMode==true){
+        accel.write(0);
+        direc.write(90);
+      }
+      autoMode = false;
+      currentDistance = 0;
+    }
+  }
+}
+
+
+
+
+void AUTO(){
+  autoMode = !autoMode;
+}
