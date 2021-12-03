@@ -14,20 +14,19 @@
 #define DIREC_PIN A3
 
 // declare all variables
-const int FREQUENCY = 910;
+const int FREQUENCY = 905;
 bool on_off_state;
-bool manual_state;
-// unsigned long prev_time;
+unsigned long prev_on_off;
+unsigned long prev_manual;
 
 RH_RF69 transceiver(CS_PIN, INT_PIN); // initialize the transceiver object
 
 void setup() {
   Serial.begin(9600); // set the serial monitor communication rate
   pinMode(ON_OFF_PIN, INPUT_PULLUP);
-  // attachInterrupt(1, on_off_switch, FALLING);
   on_off_state = false;
-  // prev_time = millis();
-  manual_state = true;
+  prev_on_off = millis();
+  prev_manual = millis();
   pinMode(MODE_PIN, INPUT_PULLUP);
   pinMode(ACCEL_PIN, INPUT);
   pinMode(DIREC_PIN, INPUT);
@@ -36,33 +35,37 @@ void setup() {
   delay(10); // wait for 10ms
   digitalWrite(RST_PIN, LOW); // set the RST pin to low
   delay(10); // wait for 10ms
-  if(!transceiver.init()) { // make sure the init is successful
+  if (!transceiver.init()) { // make sure the init is successful
     Serial.println("init failed");
   }
-  if(!transceiver.setFrequency(FREQUENCY)) { // make sure the setFrequency is successful
+  if (!transceiver.setFrequency(FREQUENCY)) { // make sure the setFrequency is successful
     Serial.println("setFrequency failed");
   }
   transceiver.setTxPower(14, true); // set transceiver's power level
 }
 
 void loop() {
+
   uint8_t packet[4];
   int rawAccelReading = analogRead(ACCEL_PIN);
   int rawDirecReading = analogRead(DIREC_PIN);
-  double convertedAccelReading = (((double)rawAccelReading)/1023-0.5)*2*255;
-  double convertedDirecReading = ((double)rawDirecReading)/1023*255;
+  double convertedAccelReading = (((double)rawAccelReading) / 1023 - 0.5) * 2 * 255;
+  double convertedDirecReading = ((double)rawDirecReading) / 1023 * 255;
   convertedAccelReading = constrain(convertedAccelReading, 0, 255);
   convertedDirecReading = constrain(convertedDirecReading, 0, 255);
-  if (digitalRead(ON_OFF_PIN) == LOW) {
+  if (digitalRead(ON_OFF_PIN) == LOW && millis() - prev_on_off > 500) {
     on_off_state = !on_off_state;
+    prev_on_off = millis();
   }
-  if (digitalRead(MODE_PIN) == LOW) {
-    manual_state = !manual_state;
+  bool man_aut_switch = false;
+  if (digitalRead(MODE_PIN) == LOW && millis() - prev_manual > 500) {
+    man_aut_switch = true;
+    prev_manual = millis();
   }
   packet[0] = (uint8_t)convertedAccelReading;
   packet[1] = (uint8_t)convertedDirecReading;
   packet[2] = (uint8_t)on_off_state;
-  packet[3] = (uint8_t)manual_state;
+  packet[3] = (uint8_t)man_aut_switch;
   transceiver.send(packet, sizeof(packet));
   transceiver.waitPacketSent();
   delay(50);
