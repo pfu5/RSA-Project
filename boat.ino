@@ -28,23 +28,17 @@ unsigned long first_hit;
 bool manual_state;
 
 // for GPS
-boolean newData = false; //controls data recording
+bool newData = false; //controls data recording
 //initializes instance
 TinyGPS myGPS;
 SoftwareSerial ss(serialpinRX, serialpinTX);
 //initializes lattitude and longtitude
-float initialFlat = 0;
-float initialFlon = 0;
-float initialAge = 0;
+float initialFlat = 0.0;
+float initialFlon = 0.0;
+float initialAge = 0.0;
 //initializes variables for distance and angle
-float distanceMeterLat;
-float distanceMeterLon;
-float radialDistance;
-float currentAngle;
-float flat, flon;
-unsigned long age;
-float circleRadius = 50;
-boolean initialized = false;
+float circleRadius = 50.0;
+bool initialized = false;
 
 RH_RF69 transceiver(CS_PIN, INT_PIN); // initialize the transceiver object
 
@@ -78,23 +72,6 @@ void setup() {
     accelServo.write(throttle);
     delay(5);
   }
-
-  while (1 > 0) {
-    if (ss.available()) {
-      char c = ss.read();
-      if (myGPS.encode(c) == true) {
-        break;//exits loop and proceeds
-      }   //only when signal is received and encodable
-    }
-  }
-  Serial.println("GPS good");
-  unsigned long age;
-  //reads and sets initial location
-  myGPS.f_get_position(&flat, &flon, &age);
-  initialFlat = flat;
-  initialFlon = flon;
-  initialAge = age;
-
 }
 
 void loop() {
@@ -119,14 +96,12 @@ void loop() {
         initialized = false;
         return;
       }
-      // TODO put autonomous code right here
       if (digitalRead(BUMPER_PIN) == LOW && millis() - first_hit > 500) {
         if (millis() - first_hit < 10000) {
           manual_state = true;
         }
         first_hit = millis();
       }
-
       newData = false;
       if (ss.available()) {
         char c = ss.read();
@@ -135,16 +110,18 @@ void loop() {
         }
       }
       if (newData) {
+        float flat, flon;
+        unsigned long age;
         myGPS.f_get_position(&flat, &flon, &age);
-        if (initialized == false){
+        if (!initialized) {
           initialFlat = flat;
           initialFlon = flon;
           initialAge = age;
           initialized = true;
         }
         //records latitudinal and longtitudinal distance
-        distanceMeterLat = TinyGPS::distance_between(flat, 0, initialFlat, 0);
-        distanceMeterLon = TinyGPS::distance_between(0, flon, 0, initialFlon);
+        float distanceMeterLat = TinyGPS::distance_between(flat, 0, initialFlat, 0);
+        float distanceMeterLon = TinyGPS::distance_between(0, flon, 0, initialFlon);
         if (flat < initialFlat) {
           distanceMeterLat = -1. * distanceMeterLat;//corrects for sign
         }
@@ -152,14 +129,10 @@ void loop() {
           distanceMeterLon = -1. * distanceMeterLon;//corrects for sign
         }
         //calculates distance from original postion
-        radialDistance = sqrt(distanceMeterLat * distanceMeterLat + distanceMeterLon * distanceMeterLon);
-        //calculates angle from original position
-        currentAngle = atan2(distanceMeterLat, distanceMeterLon);
+        float radialDistance = sqrt(distanceMeterLat * distanceMeterLat + distanceMeterLon * distanceMeterLon);
         //prints distance and angle
         Serial.println(radialDistance);
-        Serial.print(" ");
-        //Serial.println(currentAngle);
-        if (radialDistance < circleRadius){
+        if (radialDistance < circleRadius) {
           accelServo.write(180);
           direcServo.write(90);
         }
@@ -173,7 +146,6 @@ void loop() {
         accelServo.write(0);
         direcServo.write(90);
       }
-
     }
   }
 }
